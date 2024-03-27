@@ -15,11 +15,10 @@ use crate::{
 
 #[get("/authors")]
 pub async fn fetch_all_authors(state: Data<AppState>) -> impl Responder {
-    // "GET /authors".to_string()
-    let sql = "SELECT first_name, last_name FROM authors";
+    let sql = "SELECT author_id, first_name, last_name FROM authors";
     match sqlx::query_as::<_, Author>(sql).fetch_all(&state.db).await {
         Ok(authors) => HttpResponse::Ok().json(authors),
-        Err(_) => HttpResponse::NotFound().json("No authors found."),
+        Err(e) => {eprintln!("{e}"); HttpResponse::NotFound().json("No authors found.")},
     }
 }
 
