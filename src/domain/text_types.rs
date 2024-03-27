@@ -1,7 +1,9 @@
 use std::error::Error;
 
-use sqlx::{query, PgPool};
+use serde::Serialize;
+use sqlx::{prelude::FromRow, query, PgPool};
 
+#[derive(Debug, FromRow, Serialize)]
 pub struct TextType {
     pub text_type: String
 }

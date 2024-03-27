@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS text_types (
 
 CREATE TABLE IF NOT EXISTS authors (
     author_id SERIAL NOT NULL,
-    author_name VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
     PRIMARY KEY (author_id)
 );
 

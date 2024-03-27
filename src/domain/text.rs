@@ -8,7 +8,7 @@ pub struct Metadata {
     pub genre_tags: Vec<String>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Text {
     pub text_type_id: i32,
     pub author_id: i32,
@@ -38,7 +38,7 @@ impl Text {
     pub async fn create(text: &Text, pool: &PgPool) -> Result<(), Box<dyn Error>> {
         let sql =
             "INSERT INTO texts (text_type_id, author_id, title, published, metadata) VALUES ($1, $2, $3, $4, $5)";
-       
+
         query(sql)
             .bind(&text.text_type_id)
             .bind(&text.author_id)
@@ -48,5 +48,18 @@ impl Text {
             .execute(pool)
             .await?;
         Ok(())
+    }
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize)]
+pub struct TitleWithAuthor {
+    title: String,
+    first_name: String,
+    last_name: String,
+}
+
+impl TitleWithAuthor {
+    pub fn new(title: String, first_name: String, last_name: String) -> Self {
+        Self { title, first_name, last_name }
     }
 }
