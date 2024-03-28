@@ -2,11 +2,7 @@ mod domain;
 mod fixtures;
 mod services;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
-use domain::{
-    author::Author,
-    text::{Metadata, Text},
-    text_types::TextType,
-};
+use domain::text_types::TextType;
 use dotenv::dotenv;
 use fixtures::{authors::AuthorsFixture, texts::TextFixtures};
 use services::{
@@ -16,7 +12,7 @@ use services::{
     },
     post::{create_author, create_text},
 };
-use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::error::Error;
 
 // $ docker run -e POSTGRES_PASSWORD=123456 -e POSTGRES_USER=user -e POSTGRES_DB=libricola -p 5432:5432 postgres
