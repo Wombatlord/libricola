@@ -36,7 +36,7 @@ pub async fn fetch_all_text_types(state: Data<AppState>) -> impl Responder {
 
 #[get("/texts")]
 pub async fn fetch_all_text_titles_with_authors(state: Data<AppState>) -> impl Responder {
-    let sql = "SELECT texts.title, authors.first_name, authors.last_name FROM texts JOIN authors ON texts.author_id = authors.author_id";
+    let sql = "SELECT texts.title, authors.first_name, authors.last_name, texts.published FROM texts JOIN authors ON texts.author_id = authors.author_id";
     match sqlx::query_as::<_, TitleWithAuthor>(sql)
         .fetch_all(&state.db)
         .await
@@ -56,7 +56,7 @@ pub async fn fetch_all_text_titles_by_author(
 ) -> impl Responder {
     let name = path.into_inner();
     println!("{name}");
-    let sql = "SELECT texts.title, authors.first_name, authors.last_name FROM texts JOIN authors ON texts.author_id = authors.author_id WHERE authors.last_name = $1";
+    let sql = "SELECT texts.title, authors.first_name, authors.last_name, texts.published FROM texts JOIN authors ON texts.author_id = authors.author_id WHERE authors.last_name = $1";
     match sqlx::query_as::<_, TitleWithAuthor>(sql)
         .bind(name)
         .fetch_all(&state.db)
