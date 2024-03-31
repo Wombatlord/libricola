@@ -1,8 +1,12 @@
 mod domain;
 mod fixtures;
 mod services;
-use actix_web::{middleware::Logger, web::{self, Data}, App, HttpRequest, HttpServer};
 use actix_files::NamedFile;
+use actix_web::{
+    middleware::Logger,
+    web::{self, Data},
+    App, HttpRequest, HttpServer,
+};
 use domain::text_types::TextType;
 use dotenv::dotenv;
 use fixtures::{authors::AuthorsFixture, texts::TextFixtures};
@@ -34,14 +38,6 @@ async fn bootstrap_some_data(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-
-async fn index(req: HttpRequest) -> actix_web::Result<NamedFile> {
-    println!("{req:?}");
-    let path: PathBuf = req.match_info().query("index.js").parse().unwrap();
-    // println!("{path:?}");
-    Ok(NamedFile::open(path)?)
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -66,7 +62,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .service(fetch_all_text_titles_by_author)
             .service(create_author)
             .service(create_text)
-            .route("/{index.js}", web::get().to(index))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

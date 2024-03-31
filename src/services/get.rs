@@ -5,11 +5,7 @@ use actix_web::{
 };
 
 use crate::{
-    domain::{
-        author::Author,
-        text::TitleWithAuthor,
-        text_types::TextType,
-    },
+    domain::{author::Author, text::TitleWithAuthor, text_types::TextType},
     AppState,
 };
 
@@ -18,7 +14,10 @@ pub async fn fetch_all_authors(state: Data<AppState>) -> impl Responder {
     let sql = "SELECT author_id, first_name, last_name FROM authors";
     match sqlx::query_as::<_, Author>(sql).fetch_all(&state.db).await {
         Ok(authors) => HttpResponse::Ok().json(authors),
-        Err(e) => {eprintln!("{e}"); HttpResponse::NotFound().json("No authors found.")},
+        Err(e) => {
+            eprintln!("{e}");
+            HttpResponse::NotFound().json("No authors found.")
+        }
     }
 }
 
@@ -62,7 +61,12 @@ pub async fn fetch_all_text_titles_by_author(
         .fetch_all(&state.db)
         .await
     {
-        Ok(twa) => HttpResponse::Ok().json(twa),
+        Ok(twa) => {
+            if twa.len() == 0 {
+                return HttpResponse::NotFound().json("No title & author pairings found.");
+            };
+            HttpResponse::Ok().json(twa)
+        }
         Err(e) => {
             eprintln!("{e}");
             HttpResponse::NotFound().json("No title & author pairings found.")
