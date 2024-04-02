@@ -3,6 +3,7 @@ use actix_web::{
     web::{Data, Path},
     HttpResponse, Responder,
 };
+use serde_json::{json, Map, Value};
 
 use crate::{
     domain::{author::Author, text::TitleWithAuthor, text_types::TextType},
@@ -65,7 +66,22 @@ pub async fn fetch_all_text_titles_by_author(
             if twa.len() == 0 {
                 return HttpResponse::NotFound().json("No title & author pairings found.");
             };
-            HttpResponse::Ok().json(twa)
+
+            let mut main_map = Map::new();
+            let mut titles_map = Map::new();
+            let test = twa.clone();
+            let mut name = "".to_string();
+            for entry in test {
+                if name != format!("{} {}", entry.first_name, entry.last_name) {
+                    titles_map.clear();
+                }
+                name = format!("{} {}", entry.first_name, entry.last_name);
+                titles_map.insert(entry.title, entry.published.into());
+                main_map.insert(name.clone(), Value::Object(titles_map.clone()));
+            }
+
+            println!("{main_map:?}");
+            HttpResponse::Ok().json(main_map)
         }
         Err(e) => {
             eprintln!("{e}");

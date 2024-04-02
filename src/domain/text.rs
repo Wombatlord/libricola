@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{FromRow, Postgres, Transaction};
 
-use super::author::Author;
+use super::{author::Author, text_types::TextType};
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Metadata {
@@ -11,9 +11,24 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateText {
-    pub text: Text,
-    pub author: Author,
+pub struct AuthorRequestBody {
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct TextRequestBody {
+    pub text_type: String,
+    pub title: String,
+    pub published: i32,
+    #[sqlx(json)]
+    pub metadata: Metadata,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateTextRequest {
+    pub text: TextRequestBody,
+    pub author: AuthorRequestBody,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -44,11 +59,11 @@ impl Text {
         }
     }
 
-
     pub async fn with_extant_author(
         mut txn: Transaction<'_, Postgres>,
         author: Author,
-        create_tex: Json<CreateText>,
+        create_tex: Json<CreateTextRequest>,
+        text_type: TextType,
     ) -> HttpResponse {
         let author_id = author.author_id.unwrap();
 
@@ -56,7 +71,7 @@ impl Text {
 
         let ser = json!(&create_tex.text.metadata);
         let text = match sqlx::query_as::<_, Text>(text_sql)
-            .bind(&create_tex.text.text_type_id)
+            .bind(&text_type.text_type_id)
             .bind(&author_id)
             .bind(&create_tex.text.title)
             .bind(&create_tex.text.published)
@@ -81,7 +96,8 @@ impl Text {
 
     pub async fn with_new_author(
         mut txn: Transaction<'_, Postgres>,
-        create_text_and_author: Json<CreateText>,
+        create_text_and_author: Json<CreateTextRequest>,
+        text_type: TextType,
     ) -> HttpResponse {
         let author_sql = "INSERT INTO authors (first_name, last_name) VALUES ($1, $2) RETURNING authors.author_id, authors.first_name, authors.last_name";
         let author = match sqlx::query_as::<_, Author>(author_sql)
@@ -102,7 +118,7 @@ impl Text {
         let json_metadata = json!(&create_text_and_author.text.metadata);
 
         let text = match sqlx::query_as::<_, Text>(text_sql)
-            .bind(&create_text_and_author.text.text_type_id)
+            .bind(&text_type.text_type_id)
             .bind(&author.author_id)
             .bind(&create_text_and_author.text.title)
             .bind(&create_text_and_author.text.published)
@@ -126,10 +142,10 @@ impl Text {
     }
 }
 
-#[derive(Debug, FromRow, Deserialize, Serialize)]
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
 pub struct TitleWithAuthor {
-    title: String,
-    first_name: String,
-    last_name: String,
-    published: i32,
+    pub title: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub published: i32,
 }

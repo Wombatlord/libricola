@@ -33,7 +33,7 @@ impl Author {
             last_name: row.get("last_name"),
         }
     }
-    
+
     pub async fn create(state: Data<AppState>, author: &Author) -> impl Responder {
         let sql = "INSERT INTO authors (first_name, last_name) VALUES ($1, $2)";
 

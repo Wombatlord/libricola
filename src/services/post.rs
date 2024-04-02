@@ -1,7 +1,8 @@
 use crate::{
     domain::{
         author::Author,
-        text::{CreateText, Text},
+        text::{CreateTextRequest, Text},
+        text_types::TextType,
     },
     AppState,
 };
@@ -34,7 +35,10 @@ pub async fn create_author(state: Data<AppState>, author: Json<Author>) -> impl 
 }
 
 #[post("/create/text")]
-pub async fn create_text(state: Data<AppState>, create_text: Json<CreateText>) -> impl Responder {
+pub async fn create_text(
+    state: Data<AppState>,
+    create_text: Json<CreateTextRequest>,
+) -> impl Responder {
     // curl -H 'Content-Type: application/json'
     // -d '[
     //  {"text_type_id": 1,
@@ -55,16 +59,30 @@ pub async fn create_text(state: Data<AppState>, create_text: Json<CreateText>) -
         return HttpResponse::InternalServerError().json("Failed to create transaction");
     };
 
+    let text_type = match sqlx::query_as::<_, TextType>(
+        "SELECT text_type_id, text_type FROM text_types WHERE text_type = $1",
+    )
+    .bind(&create_text.text.text_type)
+    .fetch_one(&state.db)
+    .await
+    {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("{e}");
+            return HttpResponse::InternalServerError().json("Failed to find matching text type.");
+        }
+    };
+
     if let Ok(Some(author)) = sqlx::query_as::<_, Author>(sql)
         .bind(&create_text.author.first_name)
         .bind(&create_text.author.last_name)
         .fetch_optional(&state.db)
         .await
     {
-        let response = Text::with_extant_author(txn, author, create_text).await;
+        let response = Text::with_extant_author(txn, author, create_text, text_type).await;
         response
     } else {
-        let response = Text::with_new_author(txn, create_text).await;
+        let response = Text::with_new_author(txn, create_text, text_type).await;
         response
     }
 }
