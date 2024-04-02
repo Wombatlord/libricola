@@ -11,7 +11,7 @@ pub fn split_name_to_first_and_last(name: String) -> (String, String) {
 }
 
 pub async fn last_name_search(last_name: String, executor: Data<AppState>) -> HttpResponse {
-    let sql = "SELECT texts.title, authors.first_name, authors.last_name, texts.published FROM texts JOIN authors ON texts.author_id = authors.author_id WHERE authors.last_name = $1";
+    let sql = "SELECT texts.title, authors.first_name, authors.last_name, texts.published FROM texts JOIN authors ON texts.author_id = authors.author_id WHERE authors.last_name ILIKE $1";
     match sqlx::query_as::<_, TitleWithAuthor>(sql)
         .bind(last_name)
         .fetch_all(&executor.db)
@@ -36,6 +36,7 @@ pub async fn last_name_search(last_name: String, executor: Data<AppState>) -> Ht
 
 pub async fn full_name_search(full_name: String, executor: Data<AppState>) -> HttpResponse {
     let split = split_name_to_first_and_last(full_name);
+    println!("{split:?}");
     let sql = "SELECT texts.title, authors.first_name, authors.last_name, texts.published FROM texts JOIN authors ON texts.author_id = authors.author_id WHERE authors.first_name ILIKE $1 AND authors.last_name ILIKE $2";
     match sqlx::query_as::<_, TitleWithAuthor>(sql)
         .bind(split.0 + "%")
