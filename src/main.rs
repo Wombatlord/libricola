@@ -1,18 +1,17 @@
 mod domain;
 mod fixtures;
-mod services;
+mod get;
+mod post;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use fixtures::{
     author_fixture::AuthorsFixture, text_fixture::TextFixtures, text_type_fixture::TextTypeFixture,
 };
-use services::{
-    get::{
-        fetch_all_authors, fetch_all_text_titles_by_author, fetch_all_text_titles_with_authors,
-        fetch_all_text_types,
-    },
-    post::{create_author, create_text},
+use get::get_endpoints::{
+    fetch_all_authors, fetch_all_text_titles_by_author, fetch_all_text_titles_with_authors,
+    fetch_all_text_types,
 };
+use post::post_endpoints::{create_author, create_text};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::error::Error;
 
