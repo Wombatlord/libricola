@@ -3,10 +3,10 @@ use actix_web::{
     web::{Data, Path},
     HttpResponse, Responder,
 };
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 
 use crate::{
-    domain::{author::Author, text::TitleWithAuthor, text_types::TextType},
+    domain::{author::Author, request_objects::TitleWithAuthor, text_types::TextType},
     AppState,
 };
 
@@ -67,25 +67,31 @@ pub async fn fetch_all_text_titles_by_author(
                 return HttpResponse::NotFound().json("No title & author pairings found.");
             };
 
-            let mut main_map = Map::new();
-            let mut titles_map = Map::new();
-            let test = twa.clone();
-            let mut name = "".to_string();
-            for entry in test {
-                if name != format!("{} {}", entry.first_name, entry.last_name) {
-                    titles_map.clear();
-                }
-                name = format!("{} {}", entry.first_name, entry.last_name);
-                titles_map.insert(entry.title, entry.published.into());
-                main_map.insert(name.clone(), Value::Object(titles_map.clone()));
-            }
+            let response = all_text_titles_by_author_response(twa);
 
-            println!("{main_map:?}");
-            HttpResponse::Ok().json(main_map)
+            println!("{response:?}");
+            HttpResponse::Ok().json(response)
         }
         Err(e) => {
             eprintln!("{e}");
             HttpResponse::NotFound().json("No title & author pairings found.")
         }
     }
+}
+
+fn all_text_titles_by_author_response(
+    text_with_author: Vec<TitleWithAuthor>,
+) -> Map<String, Value> {
+    let mut main_map = Map::new();
+    let mut titles_map = Map::new();
+    let mut name = "".to_string();
+    for entry in text_with_author {
+        if name != format!("{} {}", entry.first_name, entry.last_name) {
+            titles_map.clear();
+        }
+        name = format!("{} {}", entry.first_name, entry.last_name);
+        titles_map.insert(entry.title, entry.published.into());
+        main_map.insert(name.clone(), Value::Object(titles_map.clone()));
+    }
+    main_map
 }

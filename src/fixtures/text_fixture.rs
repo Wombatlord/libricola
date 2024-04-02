@@ -4,8 +4,10 @@ use sqlx::{types::Json, PgPool};
 
 use crate::domain::text::{Metadata, Text};
 
+#[allow(dead_code)]
 pub struct TextFixtures;
 
+#[allow(dead_code)]
 impl TextFixtures {
     pub async fn create(pool: &PgPool, texts: Vec<Text>) -> Result<(), Box<dyn Error>> {
         let mut txn = pool.begin().await?;

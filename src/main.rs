@@ -1,15 +1,11 @@
 mod domain;
 mod fixtures;
 mod services;
-use actix_files::NamedFile;
-use actix_web::{
-    middleware::Logger,
-    web::{self, Data},
-    App, HttpRequest, HttpServer,
-};
-use domain::text_types::TextType;
+use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
-use fixtures::{authors::AuthorsFixture, texts::TextFixtures};
+use fixtures::{
+    author_fixture::AuthorsFixture, text_fixture::TextFixtures, text_type_fixture::TextTypeFixture,
+};
 use services::{
     get::{
         fetch_all_authors, fetch_all_text_titles_by_author, fetch_all_text_titles_with_authors,
@@ -19,7 +15,6 @@ use services::{
 };
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::error::Error;
-use std::path::PathBuf;
 
 // $ docker run -e POSTGRES_PASSWORD=123456 -e POSTGRES_USER=user -e POSTGRES_DB=libricola -p 5432:5432 postgres
 
@@ -27,8 +22,9 @@ struct AppState {
     db: Pool<Postgres>,
 }
 
+#[allow(dead_code)]
 async fn bootstrap_some_data(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
-    TextType::populate_text_types(&pool).await?;
+    TextTypeFixture::populate_text_types(&pool).await?;
     AuthorsFixture::populate_authors_table(&pool).await?;
     TextFixtures::populate_shakespeare(&pool).await?;
     TextFixtures::populate_homer(&pool).await?;

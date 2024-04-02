@@ -4,15 +4,25 @@ use sqlx::PgPool;
 
 use crate::domain::author::Author;
 
+#[allow(dead_code)]
 pub struct AuthorsFixture;
 
+#[allow(dead_code)]
 impl AuthorsFixture {
+    pub fn new(first_name: String, last_name: String) -> Author {
+        Author {
+            author_id: None,
+            first_name,
+            last_name,
+        }
+    }
+
     pub async fn populate_authors_table(pool: &PgPool) -> Result<(), Box<dyn Error>> {
-        let billy_shakes = Author::new("William".into(), "Shakespeare".into());
-        let simpson = Author::new("Homer".into(), "Homer".into());
-        let eliot = Author::new("TS".into(), "Eliot".into());
-        let pynchon = Author::new("Thomas".into(), "Pynchon".into());
-        let banks = Author::new("Iain. M".into(), "Banks".into());
+        let billy_shakes = AuthorsFixture::new("William".into(), "Shakespeare".into());
+        let simpson = AuthorsFixture::new("Homer".into(), "Homer".into());
+        let eliot = AuthorsFixture::new("TS".into(), "Eliot".into());
+        let pynchon = AuthorsFixture::new("Thomas".into(), "Pynchon".into());
+        let banks = AuthorsFixture::new("Iain. M".into(), "Banks".into());
 
         let authors = [billy_shakes, simpson, eliot, pynchon, banks];
 

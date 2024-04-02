@@ -1,8 +1,6 @@
 use crate::{
     domain::{
-        author::Author,
-        text::{CreateTextRequest, Text},
-        text_types::TextType,
+        author::Author, request_objects::CreateTextRequest, text::Text, text_types::TextType,
     },
     AppState,
 };

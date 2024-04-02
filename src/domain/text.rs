@@ -3,32 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{FromRow, Postgres, Transaction};
 
-use super::{author::Author, text_types::TextType};
+use super::{author::Author, request_objects::CreateTextRequest, text_types::TextType};
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Metadata {
     pub genre_tags: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AuthorRequestBody {
-    pub first_name: String,
-    pub last_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct TextRequestBody {
-    pub text_type: String,
-    pub title: String,
-    pub published: i32,
-    #[sqlx(json)]
-    pub metadata: Metadata,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateTextRequest {
-    pub text: TextRequestBody,
-    pub author: AuthorRequestBody,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -62,19 +41,19 @@ impl Text {
     pub async fn with_extant_author(
         mut txn: Transaction<'_, Postgres>,
         author: Author,
-        create_tex: Json<CreateTextRequest>,
+        create_text: Json<CreateTextRequest>,
         text_type: TextType,
     ) -> HttpResponse {
         let author_id = author.author_id.unwrap();
 
         let text_sql = "INSERT INTO texts (text_type_id, author_id, title, published, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING text_type_id, author_id, title, published, metadata";
 
-        let ser = json!(&create_tex.text.metadata);
+        let ser = json!(&create_text.text.metadata);
         let text = match sqlx::query_as::<_, Text>(text_sql)
             .bind(&text_type.text_type_id)
             .bind(&author_id)
-            .bind(&create_tex.text.title)
-            .bind(&create_tex.text.published)
+            .bind(&create_text.text.title)
+            .bind(&create_text.text.published)
             .bind(&ser)
             .fetch_one(&mut *txn)
             .await
@@ -140,12 +119,4 @@ impl Text {
                 .json(format!("Failed to commit transaction with Error: {e}")),
         }
     }
-}
-
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
-pub struct TitleWithAuthor {
-    pub title: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub published: i32,
 }
