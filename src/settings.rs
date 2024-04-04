@@ -1,9 +1,11 @@
 use serde::Deserialize;
+use sqlx::ConnectOptions;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub application: ApplicationSettings,
     pub debug: bool,
+    pub database: DatabaseSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -12,6 +14,36 @@ pub struct ApplicationSettings {
     pub host: String,
     pub base_url: String,
     pub protocol: String,
+}
+
+#[derive(Debug, serde::Deserialize, Clone)]
+pub struct DatabaseSettings {
+    pub username: String,
+    pub password: String,
+    pub port: u16,
+    pub host: String,
+    pub database_name: String,
+    pub require_ssl: bool,
+}
+
+impl DatabaseSettings {
+    pub fn connect_to_db(&self) -> sqlx::postgres::PgConnectOptions {
+        let ssl_mode = if self.require_ssl {
+            sqlx::postgres::PgSslMode::Require
+        } else {
+            sqlx::postgres::PgSslMode::Prefer
+        };
+        let options = sqlx::postgres::PgConnectOptions::new()
+            .host(&self.host)
+            .username(&self.username)
+            .password(&self.password)
+            .port(self.port)
+            .ssl_mode(ssl_mode)
+            .database(&self.database_name);
+
+        let op = options.log_statements(tracing::log::LevelFilter::Trace);
+        op
+    }
 }
 
 pub enum Environment {

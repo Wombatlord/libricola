@@ -1,6 +1,3 @@
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
-use sqlx::PgPool;
-
 use crate::{
     app_state::AppState,
     routes::{
@@ -16,7 +13,22 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(settings: Settings, pool: PgPool) -> Result<Self, std::io::Error> {
+    pub async fn build(
+        settings: Settings,
+        test_pool: Option<sqlx::postgres::PgPool>,
+    ) -> Result<Self, std::io::Error> {
+        let connection_pool = if let Some(pool) = test_pool {
+            pool
+        } else {
+            get_connection_pool(&settings.database).await
+        };
+
+        sqlx::migrate!()
+            .run(&connection_pool)
+            .await
+            .expect("Failed to migrate the database.");
+        // bootstrap_some_data(&pool).await?;
+
         let address = format!(
             "{}:{}",
             settings.application.host, settings.application.port,
@@ -24,7 +36,7 @@ impl Application {
 
         let listener = std::net::TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
-        let server = run(listener, pool).await?;
+        let server = run(listener, connection_pool).await?;
 
         Ok(Self { port, server })
     }
@@ -38,14 +50,30 @@ impl Application {
     }
 }
 
+async fn get_connection_pool(
+    settings: &crate::settings::DatabaseSettings,
+) -> sqlx::Pool<sqlx::Postgres> {
+    // let db_url = std::env::var("DATABASE_URL").expect("Failed to get DATABASE_URL.");
+    match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_with(settings.connect_to_db())
+        .await
+    {
+        Ok(pool) => pool,
+        Err(e) => {
+            tracing::event!(target: "sqlx",tracing::Level::ERROR, "Couldn't establish DB connection!: {:#?}", e);
+            panic!("Couldn't establish DB connection!")
+        }
+    }
+}
+
 async fn run(
     listener: std::net::TcpListener,
-    pool: PgPool,
+    db_pool: sqlx::postgres::PgPool,
 ) -> Result<actix_web::dev::Server, std::io::Error> {
-    let server = HttpServer::new(move || {
-        App::new()
-            .wrap(Logger::default())
-            .app_data(Data::new(AppState { db: pool.clone() }))
+    let server = actix_web::HttpServer::new(move || {
+        actix_web::App::new()
             .service(health_check)
             .service(fetch_all_authors)
             .service(fetch_all_text_types)
@@ -53,6 +81,9 @@ async fn run(
             .service(fetch_all_text_titles_by_author)
             .service(create_author)
             .service(create_text)
+            .app_data(actix_web::web::Data::new(AppState {
+                db: db_pool.clone(),
+            }))
     })
     .listen(listener)?
     .run();

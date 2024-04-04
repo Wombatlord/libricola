@@ -1,2 +1,10 @@
 application:
   port: 5000
+
+database:
+  username: "libricola"
+  password: "123456"
+  port: 5432
+  host: "localhost"
+  database_name: "libricola"
+  require_ssl: false

@@ -1,21 +1,15 @@
 // mod domain;
 
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 
 use libricola::{
-    app_state::AppState,
     fixtures::{
         author_fixture::AuthorsFixture, text_fixture::TextFixtures,
         text_type_fixture::TextTypeFixture,
     },
-    routes::{
-        create_author, create_text, fetch_all_authors, fetch_all_text_titles_by_author,
-        fetch_all_text_titles_with_authors, fetch_all_text_types,
-    },
     settings, startup, telemetry,
 };
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use sqlx::{Pool, Postgres};
 use std::error::Error;
 
 // $ docker run -e POSTGRES_PASSWORD=123456 -e POSTGRES_USER=user -e POSTGRES_DB=libricola -p 5432:5432 postgres
@@ -36,21 +30,12 @@ async fn bootstrap_some_data(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&db_url)
-        .await
-        .expect("Error building connection pool");
-
-    sqlx::migrate!("./migrations").run(&pool).await?;
-    // bootstrap_some_data(&pool).await?;
 
     let settings = settings::get_settings().expect("Failed to read settings.");
     let subscriber = telemetry::get_subscriber(settings.clone().debug);
     telemetry::init_subscriber(subscriber);
 
-    let application = startup::Application::build(settings, pool.clone()).await?;
+    let application = startup::Application::build(settings, None).await?;
     
     tracing::event!(target: "libricola", tracing::Level::INFO, "Listening on http://127.0.0.1:{}/", application.port());
 
