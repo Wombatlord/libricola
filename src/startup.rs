@@ -1,7 +1,14 @@
-use actix_web::{web::Data, App, HttpServer};
+use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use sqlx::PgPool;
 
-use crate::{app_state::AppState, routes::{create_author, create_text, fetch_all_authors, fetch_all_text_titles_by_author, fetch_all_text_titles_with_authors, fetch_all_text_types}, settings::Settings};
+use crate::{
+    app_state::AppState,
+    routes::{
+        create_author, create_text, fetch_all_authors, fetch_all_text_titles_by_author,
+        fetch_all_text_titles_with_authors, fetch_all_text_types, health_check,
+    },
+    settings::Settings,
+};
 
 pub struct Application {
     port: u16,
@@ -12,15 +19,14 @@ impl Application {
     pub async fn build(settings: Settings, pool: PgPool) -> Result<Self, std::io::Error> {
         let address = format!(
             "{}:{}",
-            settings.application.host,
-            settings.application.port,
+            settings.application.host, settings.application.port,
         );
 
         let listener = std::net::TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
         let server = run(listener, pool).await?;
 
-        Ok(Self {port, server})
+        Ok(Self { port, server })
     }
 
     pub fn port(&self) -> u16 {
@@ -32,11 +38,15 @@ impl Application {
     }
 }
 
-async fn run(listener: std::net::TcpListener, pool: PgPool) -> Result<actix_web::dev::Server, std::io::Error> {
+async fn run(
+    listener: std::net::TcpListener,
+    pool: PgPool,
+) -> Result<actix_web::dev::Server, std::io::Error> {
     let server = HttpServer::new(move || {
         App::new()
-            // .wrap(Logger::default())
+            .wrap(Logger::default())
             .app_data(Data::new(AppState { db: pool.clone() }))
+            .service(health_check)
             .service(fetch_all_authors)
             .service(fetch_all_text_types)
             .service(fetch_all_text_titles_with_authors)

@@ -13,6 +13,7 @@ use libricola::{
         create_author, create_text, fetch_all_authors, fetch_all_text_titles_by_author,
         fetch_all_text_titles_with_authors, fetch_all_text_types,
     },
+    settings, startup, telemetry,
 };
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::error::Error;
@@ -45,20 +46,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     sqlx::migrate!("./migrations").run(&pool).await?;
     // bootstrap_some_data(&pool).await?;
 
-    HttpServer::new(move || {
-        App::new()
-            .wrap(Logger::default())
-            .app_data(Data::new(AppState { db: pool.clone() }))
-            .service(fetch_all_authors)
-            .service(fetch_all_text_types)
-            .service(fetch_all_text_titles_with_authors)
-            .service(fetch_all_text_titles_by_author)
-            .service(create_author)
-            .service(create_text)
-    })
-    .bind(("127.0.0.1", 8080))?
-    .run()
-    .await?;
+    let settings = settings::get_settings().expect("Failed to read settings.");
+    let subscriber = telemetry::get_subscriber(settings.clone().debug);
+    telemetry::init_subscriber(subscriber);
+
+    let application = startup::Application::build(settings, pool.clone()).await?;
+    
+    tracing::event!(target: "libricola", tracing::Level::INFO, "Listening on http://127.0.0.1:{}/", application.port());
+
+    application.run_until_stopped().await?;
 
     Ok(())
 }

@@ -9,6 +9,14 @@ use crate::{
     domain::{author::Author, request_objects::TitleWithAuthor, text_types::TextType}, routes::get_helpers::{full_name_search, last_name_search},
 };
 
+#[tracing::instrument]
+#[get("/health-check/")]
+pub async fn health_check() -> impl Responder {
+    tracing::event!(target: "libricola", tracing::Level::DEBUG, "Accessing health-check endpoint.");
+    return HttpResponse::Ok().json("Application is safe and healthy.");
+}
+
+
 #[get("/authors")]
 pub async fn fetch_all_authors(state: Data<AppState>) -> impl Responder {
     let sql = "SELECT author_id, first_name, last_name FROM authors";
@@ -21,7 +29,7 @@ pub async fn fetch_all_authors(state: Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("/text_types")]
+#[get("/text-types")]
 pub async fn fetch_all_text_types(state: Data<AppState>) -> impl Responder {
     let sql = "SELECT text_type FROM text_types";
     match sqlx::query_as::<_, TextType>(sql)
