@@ -1,7 +1,7 @@
 use actix_web::{web::Data, HttpResponse};
 use serde_json::{Map, Value};
 
-use crate::{domain::request_objects::TitleWithAuthor, AppState};
+use crate::{app_state::AppState, domain::request_objects::TitleWithAuthor};
 
 pub fn split_name_to_first_and_last(name: String) -> (String, String) {
     let split: Vec<&str> = name.split(" ").collect();
@@ -24,7 +24,7 @@ pub async fn last_name_search(last_name: String, executor: Data<AppState>) -> Ht
 
             let response = all_text_titles_by_author_mapped(twa);
 
-            println!("{response:?}");
+            // println!("{response:?}");
             HttpResponse::Ok().json(response)
         }
         Err(e) => {

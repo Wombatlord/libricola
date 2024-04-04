@@ -1,13 +1,12 @@
 use actix_web::{
     get,
     web::{Data, Path},
-    HttpResponse, Responder,
+    HttpRequest, HttpResponse, Responder,
 };
 
 use crate::{
-    domain::{author::Author, request_objects::TitleWithAuthor, text_types::TextType},
-    get::get_helpers::{full_name_search, last_name_search},
-    AppState,
+    app_state::AppState,
+    domain::{author::Author, request_objects::TitleWithAuthor, text_types::TextType}, routes::get_helpers::{full_name_search, last_name_search},
 };
 
 #[get("/authors")]
@@ -48,12 +47,20 @@ pub async fn fetch_all_text_titles_with_authors(state: Data<AppState>) -> impl R
         }
     }
 }
-
+// https://dev.to/sirneij/authentication-system-using-rust-actix-web-and-sveltekit-user-registration-580h
 #[get("/texts/{name}")]
 pub async fn fetch_all_text_titles_by_author(
     state: Data<AppState>,
     path: Path<String>,
+    req: HttpRequest,
 ) -> impl Responder {
+    let headers = req.headers();
+    println!("{headers:?}");
+    if headers.contains_key("my_cool_header") {
+        println!("{:?}", headers.get("my_cool_header"));
+    } else {
+        return HttpResponse::Unauthorized().json("Ah ah ah! You didn't say the magic word!");
+    }
     let name = path.into_inner();
     let length_check: Vec<&str> = name.split(" ").collect();
     if length_check.len() == 1 {

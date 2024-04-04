@@ -1,25 +1,23 @@
-mod domain;
-mod fixtures;
-mod get;
-mod post;
+// mod domain;
+
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
-use fixtures::{
-    author_fixture::AuthorsFixture, text_fixture::TextFixtures, text_type_fixture::TextTypeFixture,
+
+use libricola::{
+    app_state::AppState,
+    fixtures::{
+        author_fixture::AuthorsFixture, text_fixture::TextFixtures,
+        text_type_fixture::TextTypeFixture,
+    },
+    routes::{
+        create_author, create_text, fetch_all_authors, fetch_all_text_titles_by_author,
+        fetch_all_text_titles_with_authors, fetch_all_text_types,
+    },
 };
-use get::get_endpoints::{
-    fetch_all_authors, fetch_all_text_titles_by_author, fetch_all_text_titles_with_authors,
-    fetch_all_text_types,
-};
-use post::post_endpoints::{create_author, create_text};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::error::Error;
 
 // $ docker run -e POSTGRES_PASSWORD=123456 -e POSTGRES_USER=user -e POSTGRES_DB=libricola -p 5432:5432 postgres
-
-struct AppState {
-    db: Pool<Postgres>,
-}
 
 #[allow(dead_code)]
 async fn bootstrap_some_data(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {

@@ -1,8 +1,7 @@
 use crate::{
-    domain::{
+    app_state::AppState, domain::{
         author::Author, request_objects::CreateTextRequest, text::Text, text_types::TextType,
-    },
-    AppState,
+    }
 };
 use actix_web::{
     post,
